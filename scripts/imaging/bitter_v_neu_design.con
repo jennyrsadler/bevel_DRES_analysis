@@ -1,0 +1,12 @@
+/ContrastName1	mean 
+/ContrastName2	low_restraint > high_restraint 
+/ContrastName3	high_restraint > low restraint 
+/NumWaves	2
+/NumContrasts	3
+/PPheights		1.020408e+00	1.000000e+00	1.000000e+00
+/RequiredEffect		0.601	1.177	1.177
+
+/Matrix
+5.000000e-01 5.000000e-01 
+1.000000e+00 -1.000000e+00 
+-1.000000e+00 1.000000e+00 

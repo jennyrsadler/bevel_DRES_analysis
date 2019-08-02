@@ -1,0 +1,157 @@
+---
+title: "Probabilistic Selection Task and Dietary Restraint Analysis"
+author: "JRS"
+date: "7/31/2019"
+output: html_document
+---
+## About this analysis 
+This containst the behavioral data analysis for Sadler, Acosta, Shearrer, and Burger (2019) DRES paper. File has been adapted to use deidentified data. This script will reproduce plots and results 
+
+```{r, echo=FALSE}
+library(readxl)
+library(ggplot2)
+library(psych)
+library(table1)
+#import data file
+df1 <- read.csv("/Users/jennygilbert/Documents/bevel_DRES_analysis/data/deid_bevel.csv")
+```
+
+##Select Restraint Groups
+1. Find cutoffs for tertiles
+```{r}
+quantile(df1$DRES, c(.33, .66)) 
+```
+2. Create DREScat variable with DRES categories 
+```{r}
+attach(df1)
+df1$DREScat[DRES > 2.5] <- "high_restraint"
+df1$DREScat[DRES > 1.837 & DRES <= 2.5] <- "mid_restraint"
+df1$DREScat[DRES <= 1.837] <- "low_restraint"
+detach(df1)
+print(df1$DREScat)
+```
+2. Make a new DF with participants in the high restraint and low restraint groups
+```{r}
+df <- df1[ which(df1$DREScat=='high_restraint' | df1$DREScat =="low_restraint"), ]
+print(df$ID)
+```
+
+##Generate Table 1: Sample Charateristics
+```{r, echo=FALSE}
+df$DREScat <- 
+  factor(df$DREScat, levels=c('low_restraint','high_restraint'),
+         labels=c("Low Dietary Restraint", "High Dietary Restratint"))
+
+df$test_result_group <- 
+  factor(df$test_result_group, levels=c('learner','nonlearner','punish_learner','reward_learner'),
+         labels=c("Choose Reward and Avoid Punishment", "No Learning", "Avoid Punishment",
+                  "Choose Reward"))
+
+df$sweetstim_level <- 
+  factor(df$sweetstim_level, levels=c('1','2','3','4'),
+         labels=c("14", "21", "28",
+                  "35"))
+
+df$bitterstim_level <- 
+  factor(df$bitterstim_level, levels=c('1','2','3','4'),
+         labels=c("12", "24", "48",
+                  "72"))
+
+label(df$sex) <- "Sex"
+label(df$BMI) <- "Body Mass Index"
+label(df$age) <- "Age"
+label(df$DRES) <- "DEBQ: Restratint"
+label(df$external_eating) <- "DEBQ: External Eating"
+label(df$emotional_eating) <- "DEBQ: Emotional Eating"
+label(df$PORTIONS_SSB) <- "Self-Reported Daily SSB Intake"
+label(df$TOTAL_KCAL) <- "Self-Reported Daily Intake"
+label(df$nback_accuracy) <- "N-Back Accuracy"
+label(df$sweetstim_level) <- "Sweetness of Selected Reward"
+label(df$sweetstim_pleasent) <- "Plesantness Rating of Selected Reward"
+label(df$bitterstim_level) <- "Bitterness of Selected Punishment"
+label(df$bitterstim_pleasent) <- "Plesantness Rating of Selected Punishment"
+label(df$PSTtraining_._correct) <- "Accuracy during PST Training"
+label(df$test_result_group) <- "Reinforcer Sensitivity on PST Behavioral Posttest"
+
+units(df$age) <- "years"
+units(df$BMI) <- "kg/m^2"
+units(df$TOTAL_KCAL) <- "kcal"
+units(df$PORTIONS_SSB) <- "servings"
+units(df$sweetstim_level) <- "grams of sugar per 300mL"
+units(df$bitterstim_level) <- "mg of quinine per 300mL"
+
+my.render.cont <- function(x) {
+    with(stats.apply.rounding(stats.default(x), digits=2), c("",
+        "Mean (SD)"=sprintf("%s (&plusmn; %s)", MEAN, SD)))
+}
+my.render.cat <- function(x) {
+    c("", sapply(stats.default(x), function(y) with(y,
+        sprintf("%d (%0.0f %%)", FREQ, PCT))))
+}
+```
+
+Use Table1 package to make participant characteristics table
+```{r}
+table1(~ BMI  + age + sex + DRES + external_eating + emotional_eating + TOTAL_KCAL + PORTIONS_SSB + nback_accuracy + 
+         sweetstim_level + sweetstim_pleasent + bitterstim_level + bitterstim_pleasent + PSTtraining_._correct 
+       + test_result_group | DREScat, data=df, render.continuous=my.render.cont, render.categorical=my.render.cat)
+```
+
+##Test for between group differences in characteristics 
+
+```{r}
+t.test(BMI ~ DREScat, data = df)
+t.test(age ~ DREScat, data = df)
+chisq.test(df$DREScat, df$sex, correct=FALSE)
+t.test(DRES ~ DREScat, data = df)
+t.test(external_eating ~ DREScat, data = df)
+t.test(emotional_eating ~ DREScat, data = df)
+t.test(TOTAL_KCAL ~ DREScat, data = df)
+t.test(PORTIONS_SSB ~ DREScat, data = df)
+t.test(nback_accuracy ~ DREScat, data = df)
+chisq.test(df$sweetstim_level, df$DREScat, correct=FALSE)
+t.test(sweetstim_pleasent ~ DREScat, data = df)
+chisq.test(df$bitterstim_level, df$DREScat, correct=FALSE)
+t.test(bitterstim_pleasent ~ DREScat, data = df)
+t.test(PSTtraining_._correct ~ DREScat, data = df)
+chisq.test(df$DREScat, df$test_result_group, correct=FALSE)
+```
+
+## Generate plots to visualize differneces between groups
+```{r}
+p <- ggplot(df, aes(x=DREScat, y=BMI)) 
+p + geom_boxplot(outlier.shape = NA) + geom_jitter(width = 0.2) + xlab("Dietary Restraint Groups") +
+  ylab("Body Mass Index") + theme_bw(base_size = 14) + theme_classic()
+```
+
+```{r}
+p <- ggplot(df, aes(x=DREScat, y=nback_accuracy)) 
+p + geom_boxplot(outlier.shape = NA) + geom_jitter(width = 0.2) + xlab("Dietary Restraint Groups") +
+    ylab("N-Back Accuracy") + theme_bw(base_size = 14) + theme_classic()
+```
+
+```{r}
+DRES_Palette <- c("grey99", "grey60")
+
+tbl_learner <- with(df, table(test_result_group, DREScat))
+ggplot(as.data.frame(tbl_learner), aes(factor(test_result_group), Freq, fill = DREScat)) +
+  geom_col(position = "dodge", colour="black") + theme_minimal() + scale_fill_manual(values=c(DRES_Palette), name = "Dietary Restraint Groups", labels = c("Low", "High")) +
+  labs(y = "Number of Participants", x = "PST Posttest Performance") + ylim(0,13)
+```
+
+```{r}
+tbl_sweet <- with(df, table(sweetstim_level, DREScat))
+ggplot(as.data.frame(tbl_sweet), aes(factor(sweetstim_level), Freq, fill = DREScat)) +
+  geom_col(position = "dodge", colour="black") + theme_minimal() + 
+  scale_fill_manual(values=c(DRES_Palette), name = "Dietary Restraint Groups", labels = c("Low","High")) + 
+  labs(y = "Number of Participants", x = "Sweetness Selected as Reward (g sugar/300mL") 
+```
+
+```{r}
+tbl_bitter <- with(df, table(bitterstim_level, DREScat))
+ggplot(as.data.frame(tbl_bitter), aes(factor(bitterstim_level), Freq, fill = DREScat)) +
+  geom_col(position = "dodge", colour="black") + theme_minimal() + 
+  scale_fill_manual(values=c(DRES_Palette), name = "Dietary Restraint Groups", labels = c("Low","High")) + 
+  labs(y = "Number of Participants", x = "Bitterness Selected as Punishment (ppm quinine)") 
+```
+
