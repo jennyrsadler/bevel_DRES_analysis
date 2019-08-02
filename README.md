@@ -13,5 +13,3 @@ Preprint available at [INSERT LINK HERE]
 - R scripts for behavioral analysis are included in "behavioral" folder
 - Group-level FSL models are included in "imaging" folder
 
-### Results 
-- Rplots and Routput are included 
